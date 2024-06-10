@@ -2,19 +2,47 @@
 
 #include <cstddef>
 
+#ifdef PERFECT_HASH_DEV
+#include <algorithm>
+#include <array>
+#endif
+
 namespace perfecthash {
 
 template <typename THashDefinition>
 class PerfectHashBase {
  public:
-  PerfectHashBase() {}
+  constexpr PerfectHashBase() {}
 
-  std::size_t operator()(typename THashDefinition::TKey key) const {
+  static std::size_t hash(typename THashDefinition::TKey key) {
     std::size_t baseHash = THashDefinition::baseHash(key);
     constexpr std::size_t bitmask = ~static_cast<std::size_t>(0) >>
         (8 * sizeof(std::size_t) - THashDefinition::bits);
     return (baseHash * THashDefinition::factor) & bitmask;
   }
+
+  std::size_t operator()(typename THashDefinition::TKey key) const {
+    return hash(key);
+  }
+
+#ifdef PERFECT_HASH_DEV
+  static bool validate() {
+    std::array<std::size_t, THashDefinition::keySet.size()> hashList;
+    for (int i = 0; i < THashDefinition::keySet.size(); i++) {
+      hashList[i] = hash(THashDefinition::keySet[i]);
+    }
+
+    std::sort(hashList.begin(), hashList.end());
+
+    for (int i = 0; i < hashList.size() - 1; i++) {
+      if (hashList[i] == hashList[i + 1]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+#endif
 };
 
 } // namespace perfecthash
