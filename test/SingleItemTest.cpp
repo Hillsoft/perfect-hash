@@ -8,6 +8,7 @@ class SingleIntHashDefinition {
   using TKey = int;
   constexpr static std::size_t factor = 1;
   constexpr static std::size_t bits = 1;
+  constexpr static std::size_t shift = 0;
 
   static std::size_t baseHash(TKey key) { return std::hash<int>{}(key); }
 
