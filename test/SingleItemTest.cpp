@@ -11,7 +11,7 @@ class SingleIntHashDefinition {
 
   static std::size_t baseHash(TKey key) { return std::hash<int>{}(key); }
 
-#ifdef PERFECT_HASH_DEV
+#if defined PERFECT_HASH_DEV | not defined NDEBUG
   static constexpr std::array<std::size_t, 1> keySet{1};
 #endif
 };

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 
-#ifdef PERFECT_HASH_DEV
+#if defined PERFECT_HASH_DEV | not defined NDEBUG
 #include <algorithm>
 #include <array>
 #endif
@@ -15,6 +16,14 @@ class PerfectHashBase {
   constexpr PerfectHashBase() {}
 
   static std::size_t hash(typename THashDefinition::TKey key) {
+#ifndef NDEBUG
+    assert(
+        ("key must be part of the allowed keySet",
+         std::find(
+             THashDefinition::keySet.begin(),
+             THashDefinition::keySet.end(),
+             key) != THashDefinition::keySet.end()));
+#endif
     std::size_t baseHash = THashDefinition::baseHash(key);
     constexpr std::size_t bitmask = ~static_cast<std::size_t>(0) >>
         (8 * sizeof(std::size_t) - THashDefinition::bits);
