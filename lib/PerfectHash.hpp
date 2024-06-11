@@ -15,7 +15,7 @@ class PerfectHashBase {
  public:
   constexpr PerfectHashBase() {}
 
-  static std::size_t hash(typename THashDefinition::TKey key) {
+  static std::size_t hash(const typename THashDefinition::TKey& key) {
 #ifndef NDEBUG
     assert(
         ("key must be part of the allowed keySet",
