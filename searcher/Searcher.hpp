@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <mutex>
+#include <thread>
 
 namespace perfecthash {
 
@@ -47,6 +49,22 @@ bool uniqBits(const std::array<std::size_t, N>& hashes, std::size_t bits) {
   return true;
 }
 
+struct PerfectHashResult {
+ public:
+  PerfectHashResult() {}
+  PerfectHashResult(
+      std::size_t factor,
+      std::size_t shift,
+      std::size_t bits,
+      std::size_t maxValue)
+      : factor_(factor), shift_(shift), bits_(bits), maxValue_(maxValue) {}
+
+  std::size_t factor_ = 0;
+  std::size_t shift_ = 0;
+  std::size_t bits_ = 0;
+  std::size_t maxValue_ = 0;
+};
+
 template <typename THashDefinition>
 class PerfectHashSearcher {
  public:
@@ -54,8 +72,23 @@ class PerfectHashSearcher {
 
   void search() {
     std::cout << "Searching..." << std::endl;
+    inProgress_.store(true, std::memory_order_relaxed);
+    bestMaxValue_.store(
+        std::numeric_limits<std::size_t>::max(), std::memory_order_relaxed);
 
-    while (true) {
+    {
+      std::jthread worker{[thisPtr = this]() { thisPtr->searchImpl(); }};
+
+      std::cin.get();
+      inProgress_.store(false, std::memory_order_relaxed);
+    }
+
+    printBestResult();
+  }
+
+ protected:
+  void searchImpl() {
+    while (inProgress_.load(std::memory_order_relaxed)) {
       std::size_t factor = std::rand();
       std::size_t shift = std::rand() % 64;
 
@@ -71,19 +104,35 @@ class PerfectHashSearcher {
       for (bit = 0; bit < 64; bit++) {
         sortByBit(hashes, bit);
         if (uniqBits(hashes, bit + 1)) {
-          std::cout << "Found result:\n factor: " << factor
-                    << "\n shift: " << shift << "\n bits: " << bit + 1
-                    << std::endl;
-          std::cout << "Maximum hash value: "
-                    << ((~static_cast<std::size_t>(0) >>
-                         (8 * sizeof(std::size_t) - (bit + 1))) &
-                        hashes.back())
-                    << std::endl;
-          return;
+          std::size_t maxValue = (~static_cast<std::size_t>(0) >>
+                                  (8 * sizeof(std::size_t) - (bit + 1))) &
+              hashes.back();
+          if (maxValue < bestMaxValue_.load(std::memory_order_relaxed)) {
+            std::unique_lock resultLock{resultMutex_};
+            if (maxValue < bestMaxValue_.load(std::memory_order_relaxed)) {
+              bestMaxValue_.store(maxValue, std::memory_order_relaxed);
+              result_ = PerfectHashResult{factor, shift, bit + 1, maxValue};
+            }
+          }
         }
       }
     }
   }
+
+  void printBestResult() const {
+    std::unique_lock resultLock{resultMutex_};
+    std::cout << "Best result found\n"
+              << " Factor   : " << result_.factor_ << "\n"
+              << " Shift    : " << result_.shift_ << "\n"
+              << " Bits     : " << result_.bits_ << "\n"
+              << " Max value: " << result_.maxValue_ << std::endl;
+  }
+
+  std::atomic<bool> inProgress_;
+  std::atomic<size_t> bestMaxValue_;
+
+  mutable std::mutex resultMutex_;
+  PerfectHashResult result_;
 };
 
 } // namespace perfecthash
