@@ -6,7 +6,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
+#include <random>
 #include <thread>
+#include <vector>
 
 namespace perfecthash {
 
@@ -71,7 +73,7 @@ class PerfectHashSearcher {
  public:
   PerfectHashSearcher() {}
 
-  void search() {
+  void search(std::size_t numThreads) {
     std::cout << "Theoretical best max value is "
               << THashDefinition::keySet.size() - 1 << std::endl;
     std::cout << "Searching..." << std::endl;
@@ -80,7 +82,12 @@ class PerfectHashSearcher {
         std::numeric_limits<std::size_t>::max(), std::memory_order_relaxed);
 
     {
-      std::jthread worker{[thisPtr = this]() { thisPtr->searchImpl(); }};
+      std::vector<std::jthread> workerThreads;
+      workerThreads.reserve(numThreads);
+      for (int i = 0; i < numThreads; i++) {
+        workerThreads.emplace_back(
+            [thisPtr = this]() { thisPtr->searchImpl(); });
+      }
       std::jthread printer{[thisPtr = this]() { thisPtr->resultPrintImpl(); }};
 
       std::cin.get();
@@ -92,9 +99,15 @@ class PerfectHashSearcher {
 
  protected:
   void searchImpl() {
+    std::minstd_rand randomEngine{std::random_device{}()};
     while (inProgress_.load(std::memory_order_relaxed)) {
-      std::size_t factor = std::rand();
-      std::size_t shift = std::rand() % 64;
+      std::size_t factor =
+          std::uniform_int_distribution<std::minstd_rand::result_type>{
+              0, std::numeric_limits<std::minstd_rand::result_type>::max()}(
+              randomEngine);
+      std::size_t shift =
+          std::uniform_int_distribution<std::minstd_rand::result_type>{
+              0, 63}(randomEngine);
 
       // Calculate hashes
       std::array<std::size_t, THashDefinition::keySet.size()> hashes;
