@@ -1,4 +1,5 @@
 {
   "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "C_Cpp.default.cppStandard": "c++23"
 }
