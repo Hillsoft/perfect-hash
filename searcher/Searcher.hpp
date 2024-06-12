@@ -75,7 +75,7 @@ class PerfectHashSearcher {
 
   void search(std::size_t numThreads) {
     std::cout << "Theoretical best max value is "
-              << THashDefinition::keySet.size() - 1 << std::endl;
+              << THashDefinition::keySet.size() << std::endl;
     std::cout << "Searching..." << std::endl;
     inProgress_.store(true, std::memory_order_relaxed);
     bestMaxValue_.store(
