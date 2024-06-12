@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -71,6 +72,8 @@ class PerfectHashSearcher {
   PerfectHashSearcher() {}
 
   void search() {
+    std::cout << "Theoretical best max value is "
+              << THashDefinition::keySet.size() - 1 << std::endl;
     std::cout << "Searching..." << std::endl;
     inProgress_.store(true, std::memory_order_relaxed);
     bestMaxValue_.store(
@@ -78,6 +81,7 @@ class PerfectHashSearcher {
 
     {
       std::jthread worker{[thisPtr = this]() { thisPtr->searchImpl(); }};
+      std::jthread printer{[thisPtr = this]() { thisPtr->resultPrintImpl(); }};
 
       std::cin.get();
       inProgress_.store(false, std::memory_order_relaxed);
@@ -117,6 +121,21 @@ class PerfectHashSearcher {
         }
       }
     }
+  }
+
+  void resultPrintImpl() const {
+    while (inProgress_.load(std::memory_order_relaxed)) {
+      printBestResult();
+      std::cout << "Press enter to stop search..." << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+      // Clear lines
+      std::cout << "\r\033[K";
+      for (int i = 0; i < 6; i++) {
+        std::cout << "\033[1A\033[K";
+      }
+    }
+    std::cout << "\033[1A\033[K";
   }
 
   void printBestResult() const {
