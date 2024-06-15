@@ -12,8 +12,7 @@
 
 namespace perfecthash {
 
-template <std::size_t N>
-void sortByBit(std::array<std::size_t, N>& hashes, std::size_t bit) {
+void sortByBit(std::vector<std::size_t>& hashes, std::size_t bit) {
   int zeros = 0;
   for (const auto& h : hashes) {
     if (((h >> bit) & 1) == 0) {
@@ -21,7 +20,8 @@ void sortByBit(std::array<std::size_t, N>& hashes, std::size_t bit) {
     }
   }
 
-  std::array<std::size_t, N> sortedHashes;
+  std::vector<std::size_t> sortedHashes;
+  sortedHashes.resize(hashes.size());
   int zeroPos = 0;
   int onePos = zeros;
   for (const auto& h : hashes) {
@@ -37,12 +37,11 @@ void sortByBit(std::array<std::size_t, N>& hashes, std::size_t bit) {
   hashes.swap(sortedHashes);
 }
 
-template <std::size_t N>
-bool uniqBits(const std::array<std::size_t, N>& hashes, std::size_t bits) {
+bool uniqBits(const std::vector<std::size_t>& hashes, std::size_t bits) {
   std::size_t bitmask =
       ~static_cast<std::size_t>(0) >> (8 * sizeof(std::size_t) - bits);
   std::size_t prev = hashes[0] & bitmask;
-  for (int i = 1; i < N; i++) {
+  for (int i = 1; i < hashes.size(); i++) {
     std::size_t cur = hashes[i] & bitmask;
     if (prev == cur) {
       return false;
@@ -110,7 +109,8 @@ class PerfectHashSearcher {
               0, 63}(randomEngine);
 
       // Calculate hashes
-      std::array<std::size_t, THashDefinition::keySet.size()> hashes;
+      std::vector<std::size_t> hashes;
+      hashes.resize(THashDefinition::keySet.size());
       for (int i = 0; i < hashes.size(); i++) {
         hashes[i] =
             (THashDefinition::baseHash(THashDefinition::keySet[i]) * factor) >>
