@@ -18,5 +18,13 @@ squaredemovalidate: demo/SquaresDemoValidation.cpp demo/SquaresDemo.hpp lib/Perf
 	@mkdir -p build
 	g++ -g demo/SquaresDemoValidation.cpp -o build/SquaresDemoValidate -std=c++23 -I.
 
+twoonesearch: demo/TwoOneDemoSearch.cpp demo/TwoOneDemo.hpp searcher/Searcher.hpp
+	@mkdir -p build
+	g++ -g demo/TwoOneDemoSearch.cpp -o build/TwoOneDemoSearch -std=c++23 -I.
+
+twoonedemovalidate: demo/TwoOneDemoValidation.cpp demo/TwoOneDemo.hpp lib/PerfectHash.hpp
+	@mkdir -p build
+	g++ -g demo/TwoOneDemoValidation.cpp -o build/TwoOneDemoValidate -std=c++23 -I.
+
 clean:
 	rm -rf build
