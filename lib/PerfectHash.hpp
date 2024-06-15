@@ -37,7 +37,8 @@ class PerfectHashBase {
 
 #ifdef PERFECT_HASH_DEV
   static bool validate() {
-    std::array<std::size_t, THashDefinition::keySet.size()> hashList;
+    std::vector<std::size_t> hashList;
+    hashList.resize(THashDefinition::keySet.size());
     for (int i = 0; i < THashDefinition::keySet.size(); i++) {
       hashList[i] = hash(THashDefinition::keySet[i]);
     }
