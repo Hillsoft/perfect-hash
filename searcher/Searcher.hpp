@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -12,29 +13,29 @@
 
 namespace perfecthash {
 
-void sortByBit(std::vector<std::size_t>& hashes, std::size_t bit) {
+void sortByBit(
+    const std::vector<std::size_t>& hashesIn,
+    std::vector<std::size_t>& hashesOut,
+    std::size_t bit) {
   int zeros = 0;
-  for (const auto& h : hashes) {
+  for (const auto& h : hashesIn) {
     if (((h >> bit) & 1) == 0) {
       zeros++;
     }
   }
 
-  std::vector<std::size_t> sortedHashes;
-  sortedHashes.resize(hashes.size());
+  assert(hashesOut.size() == hashesIn.size());
   int zeroPos = 0;
   int onePos = zeros;
-  for (const auto& h : hashes) {
+  for (const auto& h : hashesIn) {
     if (((h >> bit) & 1) == 0) {
-      sortedHashes[zeroPos] = h;
+      hashesOut[zeroPos] = h;
       zeroPos++;
     } else {
-      sortedHashes[onePos] = h;
+      hashesOut[onePos] = h;
       onePos++;
     }
   }
-
-  hashes.swap(sortedHashes);
 }
 
 bool uniqBits(const std::vector<std::size_t>& hashes, std::size_t bits) {
@@ -135,14 +136,17 @@ class PerfectHashSearcher {
 
       // Calculate hashes
       std::vector<std::size_t> hashes;
+      std::vector<std::size_t> hashSortBuffer;
       hashes.resize(THashDefinition::keySet.size());
+      hashSortBuffer.resize(THashDefinition::keySet.size());
       for (int i = 0; i < hashes.size(); i++) {
         hashes[i] = (baseHashes_[i] * factor) >> shift;
       }
 
       std::size_t bit;
       for (bit = 0; bit < 64; bit++) {
-        sortByBit(hashes, bit);
+        sortByBit(hashes, hashSortBuffer, bit);
+        hashes.swap(hashSortBuffer);
         if (uniqBits(hashes, bit + 1)) {
           std::size_t maxValue = (~static_cast<std::size_t>(0) >>
                                   (8 * sizeof(std::size_t) - (bit + 1))) &
