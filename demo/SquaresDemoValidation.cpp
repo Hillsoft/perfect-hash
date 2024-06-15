@@ -10,7 +10,9 @@ using SquarePerfectHash = perfecthash::PerfectHashBase<SquareHashDefinition>;
 int main(int argc, char** argv) {
   if (SquarePerfectHash::validate()) {
     std::cout << "Valid" << std::endl;
+    return 0;
   } else {
     std::cout << "Invalid" << std::endl;
+    return 1;
   }
 }

@@ -10,7 +10,9 @@ using TwoOnePerfectHash = perfecthash::PerfectHashBase<TwoOneHashDefinition>;
 int main(int argc, char** argv) {
   if (TwoOnePerfectHash::validate()) {
     std::cout << "Valid" << std::endl;
+    return 0;
   } else {
     std::cout << "Invalid" << std::endl;
+    return 1;
   }
 }

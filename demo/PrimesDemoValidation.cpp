@@ -10,7 +10,9 @@ using PrimePerfectHash = perfecthash::PerfectHashBase<PrimeHashDefinition>;
 int main(int argc, char** argv) {
   if (PrimePerfectHash::validate()) {
     std::cout << "Valid" << std::endl;
+    return 0;
   } else {
     std::cout << "Invalid" << std::endl;
+    return 1;
   }
 }
