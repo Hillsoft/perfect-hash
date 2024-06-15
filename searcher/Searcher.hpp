@@ -82,15 +82,14 @@ struct PerfectHashResult {
 template <typename THashDefinition>
 class PerfectHashSearcher {
  public:
-  PerfectHashSearcher() {}
-
-  void search(std::size_t numThreads) {
-    baseHashes_.clear();
-    baseHashes_.reserve(THashDefinition::keySet.size());
+  static void search(std::size_t numThreads) {
+    PerfectHashSearcher searcher{};
+    searcher.baseHashes_.clear();
+    searcher.baseHashes_.reserve(THashDefinition::keySet.size());
     for (const auto& key : THashDefinition::keySet) {
-      baseHashes_.emplace_back(THashDefinition::baseHash(key));
+      searcher.baseHashes_.emplace_back(THashDefinition::baseHash(key));
     }
-    if (hasDuplicates(baseHashes_)) {
+    if (hasDuplicates(searcher.baseHashes_)) {
       std::cout << "There are hash collisions in the base hash\nTerminating"
                 << std::endl;
       return;
@@ -99,29 +98,30 @@ class PerfectHashSearcher {
     std::cout << "Theoretical best max value is "
               << THashDefinition::keySet.size() << std::endl;
     std::cout << "Searching..." << std::endl;
-    inProgress_.store(true, std::memory_order_relaxed);
-    bestMaxValue_.store(
+    searcher.inProgress_.store(true, std::memory_order_relaxed);
+    searcher.bestMaxValue_.store(
         std::numeric_limits<std::size_t>::max(), std::memory_order_relaxed);
-    testedHashes_.store(0, std::memory_order_relaxed);
-    start_ = std::chrono::steady_clock::now();
+    searcher.testedHashes_.store(0, std::memory_order_relaxed);
+    searcher.start_ = std::chrono::steady_clock::now();
 
     {
-      std::jthread printer{[thisPtr = this]() { thisPtr->resultPrintImpl(); }};
+      std::jthread printer{[&searcher]() { searcher.resultPrintImpl(); }};
       std::vector<std::jthread> workerThreads;
       workerThreads.reserve(numThreads);
       for (int i = 0; i < numThreads; i++) {
-        workerThreads.emplace_back(
-            [thisPtr = this]() { thisPtr->searchImpl(); });
+        workerThreads.emplace_back([&searcher]() { searcher.searchImpl(); });
       }
 
       std::cin.get();
-      inProgress_.store(false, std::memory_order_relaxed);
+      searcher.inProgress_.store(false, std::memory_order_relaxed);
     }
 
-    printBestResult();
+    searcher.printBestResult();
   }
 
  protected:
+  PerfectHashSearcher() {}
+
   void searchImpl() {
     size_t testedHashes = 0;
     std::minstd_rand randomEngine{std::random_device{}()};
