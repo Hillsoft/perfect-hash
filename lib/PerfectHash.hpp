@@ -51,7 +51,7 @@ class PerfectHashBase {
       }
     }
 
-    return true;
+    return hashList.back() == THashDefinition::maxValue;
   }
 #endif
 };
