@@ -51,6 +51,17 @@ bool uniqBits(const std::vector<std::size_t>& hashes, std::size_t bits) {
   return true;
 }
 
+template <typename T>
+bool hasDuplicates(std::vector<T> vec) {
+  std::sort(vec.begin(), vec.end());
+  for (int i = 0; i < vec.size() - 1; i++) {
+    if (vec[i] == vec[i + 1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 struct PerfectHashResult {
  public:
   PerfectHashResult() {}
@@ -73,6 +84,17 @@ class PerfectHashSearcher {
   PerfectHashSearcher() {}
 
   void search(std::size_t numThreads) {
+    baseHashes_.clear();
+    baseHashes_.reserve(THashDefinition::keySet.size());
+    for (const auto& key : THashDefinition::keySet) {
+      baseHashes_.emplace_back(THashDefinition::baseHash(key));
+    }
+    if (hasDuplicates(baseHashes_)) {
+      std::cout << "There are hash collisions in the base hash\nTerminating"
+                << std::endl;
+      return;
+    }
+
     std::cout << "Theoretical best max value is "
               << THashDefinition::keySet.size() << std::endl;
     std::cout << "Searching..." << std::endl;
@@ -112,9 +134,7 @@ class PerfectHashSearcher {
       std::vector<std::size_t> hashes;
       hashes.resize(THashDefinition::keySet.size());
       for (int i = 0; i < hashes.size(); i++) {
-        hashes[i] =
-            (THashDefinition::baseHash(THashDefinition::keySet[i]) * factor) >>
-            shift;
+        hashes[i] = (baseHashes_[i] * factor) >> shift;
       }
 
       std::size_t bit;
@@ -159,6 +179,8 @@ class PerfectHashSearcher {
               << " Bits     : " << result_.bits_ << "\n"
               << " Max value: " << result_.maxValue_ << std::endl;
   }
+
+  std::vector<size_t> baseHashes_;
 
   std::atomic<bool> inProgress_;
   std::atomic<size_t> bestMaxValue_;
