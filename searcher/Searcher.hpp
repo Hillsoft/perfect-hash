@@ -83,13 +83,12 @@ template <typename THashDefinition>
 class PerfectHashSearcher {
  public:
   static void search(std::size_t numThreads) {
-    PerfectHashSearcher searcher{};
-    searcher.baseHashes_.clear();
-    searcher.baseHashes_.reserve(THashDefinition::keySet.size());
+    std::vector<size_t> baseHashes;
+    baseHashes.reserve(THashDefinition::keySet.size());
     for (const auto& key : THashDefinition::keySet) {
-      searcher.baseHashes_.emplace_back(THashDefinition::baseHash(key));
+      baseHashes.emplace_back(THashDefinition::baseHash(key));
     }
-    if (hasDuplicates(searcher.baseHashes_)) {
+    if (hasDuplicates(baseHashes)) {
       std::cout << "There are hash collisions in the base hash\nTerminating"
                 << std::endl;
       return;
@@ -98,11 +97,7 @@ class PerfectHashSearcher {
     std::cout << "Theoretical best max value is "
               << THashDefinition::keySet.size() << std::endl;
     std::cout << "Searching..." << std::endl;
-    searcher.inProgress_.store(true, std::memory_order_relaxed);
-    searcher.bestMaxValue_.store(
-        std::numeric_limits<std::size_t>::max(), std::memory_order_relaxed);
-    searcher.testedHashes_.store(0, std::memory_order_relaxed);
-    searcher.start_ = std::chrono::steady_clock::now();
+    PerfectHashSearcher searcher{std::move(baseHashes)};
 
     {
       std::jthread printer{[&searcher]() { searcher.resultPrintImpl(); }};
@@ -120,7 +115,12 @@ class PerfectHashSearcher {
   }
 
  protected:
-  PerfectHashSearcher() {}
+  PerfectHashSearcher(std::vector<size_t> baseHashes)
+      : baseHashes_(std::move(baseHashes)),
+        start_(std::chrono::steady_clock::now()),
+        inProgress_(true),
+        bestMaxValue_(std::numeric_limits<std::size_t>::max()),
+        testedHashes_(0) {}
 
   void searchImpl() {
     size_t testedHashes = 0;
@@ -208,8 +208,8 @@ class PerfectHashSearcher {
               << " Max value: " << result_.maxValue_ << std::endl;
   }
 
-  std::vector<size_t> baseHashes_;
-  std::chrono::steady_clock::time_point start_;
+  const std::vector<size_t> baseHashes_;
+  const std::chrono::steady_clock::time_point start_;
 
   std::atomic<bool> inProgress_;
   std::atomic<size_t> bestMaxValue_;
