@@ -19,10 +19,10 @@ class TwoOneHashDefinition {
   using TKey = uint64_t;
 
   // Some sample values we got from a search
-  constexpr static std::size_t factor = 7504714790840675698;
+  constexpr static std::size_t factor = 6923916823749913518;
   constexpr static std::size_t shift = 47;
   constexpr static std::size_t bits = 17;
-  constexpr static std::size_t maxValue = 130641;
+  constexpr static std::size_t maxValue = 130200;
 
   static std::size_t baseHash(TKey key) { return std::hash<uint64_t>{}(key); }
 
