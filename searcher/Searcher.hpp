@@ -144,8 +144,11 @@ class PerfectHashSearcher {
         hashes[i] = (baseHashes_[i] * factor) >> shift;
       }
 
+      std::size_t bestMaxValueCache =
+          bestMaxValue_.load(std::memory_order_relaxed);
       std::size_t bit;
-      for (bit = 0; bit < 64; bit++) {
+      for (bit = 0; bit < 64 && (1ull << (bit + 1)) < bestMaxValueCache;
+           bit++) {
         sortByBit(hashes, hashSortBuffer, bit);
         hashes.swap(hashSortBuffer);
         if (uniqBits(hashes, bit + 1)) {
