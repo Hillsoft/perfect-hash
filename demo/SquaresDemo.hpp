@@ -10,6 +10,7 @@ class SquareHashDefinition {
   constexpr static std::size_t factor = 7260173331976099771;
   constexpr static std::size_t shift = 58;
   constexpr static std::size_t bits = 5;
+  constexpr static std::size_t maxValue = 27;
 
   static std::size_t baseHash(TKey key) { return std::hash<int>{}(key); }
 
