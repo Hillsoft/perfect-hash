@@ -150,7 +150,7 @@ class PerfectHashSearcher {
       for (bit = 0; bit < 64 && (1ull << bit) < bestMaxValueCache; bit++) {
         sortByBit(hashes, hashSortBuffer, bit);
         hashes.swap(hashSortBuffer);
-        if ((1ull << bit) >= hashes.size() && uniqBits(hashes, bit + 1)) {
+        if ((1ull << (bit + 1)) >= hashes.size() && uniqBits(hashes, bit + 1)) {
           std::size_t maxValue = (~static_cast<std::size_t>(0) >>
                                   (8 * sizeof(std::size_t) - (bit + 1))) &
               hashes.back();
