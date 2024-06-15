@@ -101,15 +101,17 @@ class PerfectHashSearcher {
     inProgress_.store(true, std::memory_order_relaxed);
     bestMaxValue_.store(
         std::numeric_limits<std::size_t>::max(), std::memory_order_relaxed);
+    testedHashes_.store(0, std::memory_order_relaxed);
+    start_ = std::chrono::steady_clock::now();
 
     {
+      std::jthread printer{[thisPtr = this]() { thisPtr->resultPrintImpl(); }};
       std::vector<std::jthread> workerThreads;
       workerThreads.reserve(numThreads);
       for (int i = 0; i < numThreads; i++) {
         workerThreads.emplace_back(
             [thisPtr = this]() { thisPtr->searchImpl(); });
       }
-      std::jthread printer{[thisPtr = this]() { thisPtr->resultPrintImpl(); }};
 
       std::cin.get();
       inProgress_.store(false, std::memory_order_relaxed);
@@ -120,6 +122,7 @@ class PerfectHashSearcher {
 
  protected:
   void searchImpl() {
+    size_t testedHashes = 0;
     std::minstd_rand randomEngine{std::random_device{}()};
     while (inProgress_.load(std::memory_order_relaxed)) {
       std::size_t factor =
@@ -153,6 +156,12 @@ class PerfectHashSearcher {
           }
         }
       }
+
+      testedHashes++;
+      if (factor % 100 == 0) {
+        testedHashes_.fetch_add(testedHashes, std::memory_order_relaxed);
+        testedHashes = 0;
+      }
     }
   }
 
@@ -164,7 +173,7 @@ class PerfectHashSearcher {
 
       // Clear lines
       std::cout << "\r\033[K";
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 8; i++) {
         std::cout << "\033[1A\033[K";
       }
     }
@@ -173,6 +182,18 @@ class PerfectHashSearcher {
 
   void printBestResult() const {
     std::unique_lock resultLock{resultMutex_};
+
+    std::size_t testedHashes = testedHashes_.load(std::memory_order_relaxed);
+    std::size_t elapsedSeconds =
+        std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::steady_clock::now() - start_)
+            .count();
+    std::size_t testRate =
+        elapsedSeconds > 0 ? testedHashes / elapsedSeconds : 0;
+
+    std::cout << "Tested hashes: " << testedHashes << "\n"
+              << "Test rate    : " << testRate << "/s\n";
+
     std::cout << "Best result found\n"
               << " Factor   : " << result_.factor_ << "\n"
               << " Shift    : " << result_.shift_ << "\n"
@@ -181,12 +202,15 @@ class PerfectHashSearcher {
   }
 
   std::vector<size_t> baseHashes_;
+  std::chrono::steady_clock::time_point start_;
 
   std::atomic<bool> inProgress_;
   std::atomic<size_t> bestMaxValue_;
 
   mutable std::mutex resultMutex_;
   PerfectHashResult result_;
+
+  std::atomic<size_t> testedHashes_;
 };
 
 } // namespace perfecthash
