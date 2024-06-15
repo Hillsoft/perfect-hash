@@ -125,6 +125,11 @@ class PerfectHashSearcher {
   void searchImpl() {
     size_t testedHashes = 0;
     std::minstd_rand randomEngine{std::random_device{}()};
+    std::vector<std::size_t> hashes;
+    std::vector<std::size_t> hashSortBuffer;
+    hashes.resize(THashDefinition::keySet.size());
+    hashSortBuffer.resize(THashDefinition::keySet.size());
+
     while (inProgress_.load(std::memory_order_relaxed)) {
       std::size_t factor =
           std::uniform_int_distribution<std::minstd_rand::result_type>{
@@ -135,10 +140,6 @@ class PerfectHashSearcher {
               0, 63}(randomEngine);
 
       // Calculate hashes
-      std::vector<std::size_t> hashes;
-      std::vector<std::size_t> hashSortBuffer;
-      hashes.resize(THashDefinition::keySet.size());
-      hashSortBuffer.resize(THashDefinition::keySet.size());
       for (int i = 0; i < hashes.size(); i++) {
         hashes[i] = (baseHashes_[i] * factor) >> shift;
       }
