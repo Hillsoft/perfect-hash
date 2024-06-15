@@ -184,12 +184,12 @@ class PerfectHashSearcher {
     std::unique_lock resultLock{resultMutex_};
 
     std::size_t testedHashes = testedHashes_.load(std::memory_order_relaxed);
-    std::size_t elapsedSeconds =
-        std::chrono::duration_cast<std::chrono::seconds>(
+    std::size_t elapsedMillis =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start_)
             .count();
     std::size_t testRate =
-        elapsedSeconds > 0 ? testedHashes / elapsedSeconds : 0;
+        elapsedMillis > 0 ? (1000 * testedHashes / elapsedMillis) : 0;
 
     std::cout << "Tested hashes: " << testedHashes << "\n"
               << "Test rate    : " << testRate << "/s\n";
